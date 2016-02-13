@@ -6,42 +6,73 @@ var app = playground({
     container: gameContainer,
 
     create: function () {
-        this.box = {
+        this.ball = {
             x: 0,
             y: this.center.y,
-            width: 64,
-            height: 64,
-            color: "#e2643e",
-            speed: 100
+            width: 8,
+            height: 16,
+            color: "#4e4",
+            speed: {
+                x: 100,
+                y: 90
+            }
         };
+
+        this.paddle = {
+            x: this.center.x,
+            y: 140,
+            width: 40,
+            height: 10,
+            color: "#999"
+        }
     },
 
     step: function(dt) {
-        this.box.x += this.box.speed * dt;
-        if(this.box.x > this.width) this.box.x = -this.box.width;
+        var ball = this.ball;
+        var paddle = this.paddle;
+        ball.x += ball.speed.x * dt;
+        ball.y += ball.speed.y * dt;
+        if(ball.x > this.width || ball.x < 0)
+            ball.speed.x = -ball.speed.x;
+        if(ball.y > this.height || ball.y < 0)
+            ball.speed.y = -ball.speed.y;
+        if(ball.y > paddle.y){
+            if (ball.x > paddle.x && ball.x < paddle.x + paddle.width)
+            ball.speed.y = -ball.speed.y;
+        }
+
     },
 
     render: function() {
-        var box = this.box;
+        var ball = this.ball;
+        var paddle = this.paddle;
 
         this.layer
             .clear("#000")
             //mouse data
-            .font("16px Arial")
+            .font("8px Minecraftia-Regular")
             .fillStyle("#fff")
-            .fillText(this.text, 16, 32)
+            .fillText(this.text, 8, 8)
             .restore();
 
-            //box
+        //ball
         this.layer
-            .fillStyle(box.color)
-            .fillRect(box.x, box.y, box.width, box.height)
+            .fillStyle(ball.color)
+            .fillCircle(ball.x, ball.y, ball.height/2)
+            .restore();
+
+        //paddle
+        this.layer
+            .fillStyle(paddle.color)
+            .fillRect(paddle.x, paddle.y, paddle.width, paddle.height)
             .restore();
 
     },
 
     mousemove: function(data) {
         this.text = "mouse move " + data.x + " , " + data.y;
+        this.paddle.x = data.x - this.paddle.width/2;
+        //this.paddle.y = data.y;
     },
 
     mousedown: function(data) {
