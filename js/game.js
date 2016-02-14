@@ -7,11 +7,11 @@ ARCADE.breakout = {
             x: 0,
             y: this.app.center.y,
             width: 8,
-            height: 16,
-            color: "#4e4",
+            height: 8,
+            color: "green",
             speed: {
                 x: 100,
-                y: 90
+                y: 120
             }
         };
 
@@ -19,24 +19,42 @@ ARCADE.breakout = {
             x: this.app.center.x,
             y: 140,
             width: 40,
-            height: 10,
-            color: "#999"
-        }
+            height: 16,
+            color: "#999",
+            px: 0,//to store previous frame position for speed calc
+            speed: 0,
+            mod: {
+                x: 0,
+                y: 0
+            }
+    }
     },
 
     step: function(dt) {
         var ball = this.app.ball;
         var paddle = this.app.paddle;
+
+        paddle.speed = (paddle.x - paddle.px) * dt * 500;
         ball.x += ball.speed.x * dt;
         ball.y += ball.speed.y * dt;
+
         if(ball.x > this.app.width || ball.x < 0)
             ball.speed.x = -ball.speed.x;
+
         if(ball.y > this.app.height || ball.y < 0)
             ball.speed.y = -ball.speed.y;
+
         if(ball.y > paddle.y){
-            if (ball.x > paddle.x && ball.x < paddle.x + paddle.width)
-            ball.speed.y = -ball.speed.y;
+            if (ball.x > paddle.x && ball.x < paddle.x + paddle.width){
+                ball.speed.y = -ball.speed.y;
+                ball.speed.x += paddle.speed;
+            }
         }
+
+        paddle.px = paddle.x;
+        paddle.mod.x = Math.abs(paddle.speed * 0.15);  //juice paddle render on move
+        paddle.mod.y = Math.abs(paddle.speed * 0.03);
+
 
     },
 
@@ -44,12 +62,13 @@ ARCADE.breakout = {
         var ball = this.app.ball;
         var paddle = this.app.paddle;
 
+
         this.app.layer
-            .clear("#000")
+            .clear("#222")
             //mouse data
             .font("8px Minecraftia-Regular")
             .fillStyle("#fff")
-            .fillText(this.text, 8, 8)
+            .fillText(this.app.text, 8, 8)
             .restore();
 
         //ball
@@ -61,14 +80,15 @@ ARCADE.breakout = {
         //paddle
         this.app.layer
             .fillStyle(paddle.color)
-            .fillRect(paddle.x, paddle.y, paddle.width, paddle.height)
+            .fillRect(paddle.x, paddle.y, paddle.width+paddle.mod.x, paddle.height-paddle.mod.y)
             .restore();
 
     },
 
     mousemove: function(data) {
-        this.text = "mouse move " + data.x + " , " + data.y;
-        this.app.paddle.x = data.x - this.app.paddle.width/2;
+        this.app.text = "mouse move " + data.x + " , " + data.y + " paddleSpeed: " + this.app.paddle.speed;
+        this.app.paddle.x = data.x - (this.app.paddle.width + this.app.paddle.mod.x)/2;
+
         //this.paddle.y = data.y;
     },
 

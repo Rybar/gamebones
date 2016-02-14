@@ -64,7 +64,7 @@
 
 */
 
-/* file: src/lib/Ease.js */
+/* file: src/vendor/Ease.js */
 
 /*
 
@@ -4408,7 +4408,7 @@ PLAYGROUND.LoadingScreen = {
 
 };
 
-/* file: src/lib/CanvasQuery.js */
+/* file: src/vendor/CanvasQuery.js */
 
 /*
 

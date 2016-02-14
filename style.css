@@ -12,6 +12,7 @@ body {
     right: 0;
     width: 650px;
     height: 370px;
+    cursor: none;
 }
 
 @font-face {
