@@ -1,19 +1,28 @@
+var PLAYGROUND;
 
 
 /* file: license.txt */
 
-/*
+/*     
 
-  PlaygroundJS r10
-
+  PlaygroundJS r11 (WIP)
+  
   http://playgroundjs.com
-
+  
   (c) 2012-2016 http://rezoner.net
-
+  
   Playground may be freely distributed under the MIT license.
 
   latest major changes:
 
+  r12
+
+  + fixed font loader and antialias
+
+  r11
+
+  + sound panning
+  
   r10
 
   + tween.call
@@ -22,7 +31,7 @@
 
   r9
 
-  + json data extend
+  + json data cascade
   + tween step event
 
   r8
@@ -40,7 +49,7 @@
   + custom transitions
   + fixes for gamepad
   + updated CanvasQuery
-
+  
   r5
 
   + game loop split into render and step - check profiler
@@ -51,7 +60,7 @@
   + gamepad stick issue
   + pointerwheel event
   + updated CanvasQuery
-  - removed video recorder
+  - removed video recorder  
 
   r4
 
@@ -64,14 +73,14 @@
 
 */
 
-/* file: src/vendor/Ease.js */
+/* file: src/lib/Ease.js */
 
-/*
+/*     
 
   Ease 1.0
-
+  
   http://canvasquery.com
-
+  
   (c) 2015 by Rezoner - http://rezoner.net
 
   `ease` may be freely distributed under the MIT license.
@@ -320,8 +329,8 @@
 
     },
 
-    /*
-
+    /* 
+      
       Cubic-spline interpolation by Ivan Kuckir
 
       http://blog.ivank.net/interpolation-with-cubic-splines.html
@@ -485,6 +494,8 @@
 /* file: src/Playground.js */
 
 PLAYGROUND = {};
+
+PLAYGROUND.MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 function playground(args) {
 
@@ -855,10 +866,10 @@ PLAYGROUND.Events.prototype = {
     for (var i = 0, len = this.listeners[event].length; i < len; i++) {
 
       if (this.listeners[event][i] === callback) {
-
+      
         this.listeners[event].splice(i--, 1);
         len--;
-
+      
       }
 
     }
@@ -894,7 +905,7 @@ PLAYGROUND.Events.prototype = {
     /* or subscribed to a single event */
 
     if (this.listeners[event]) {
-
+      
       for (var i = 0, len = this.listeners[event].length; i < len; i++) {
 
         var listener = this.listeners[event][i];
@@ -904,10 +915,10 @@ PLAYGROUND.Events.prototype = {
         if (listener.once) {
           this.listeners[event].splice(i--, 1);
           len--;
-        }
+        } 
 
       }
-
+      
     }
 
   }
@@ -1017,7 +1028,7 @@ PLAYGROUND.States.prototype = {
    * Don't call this function directly. Instead, use
    * `PLAYGROUND.Application.setState()`.
    */
-
+   
   set: function(state) {
 
     if (this.current && this.current.leave) this.current.leave();
@@ -1211,7 +1222,7 @@ PLAYGROUND.Application.prototype = {
 
   /**
       Change active state.
-      Simply forwarded to PLAYGROUND.States.
+      Simply forwarded to PLAYGROUND.States.  
 
   */
 
@@ -1559,7 +1570,7 @@ PLAYGROUND.Application.prototype = {
   /*
 
     Loads images.
-
+   
     The list may be nested.
 
   */
@@ -1647,9 +1658,9 @@ PLAYGROUND.Application.prototype = {
 
   },
 
-  /*
+  /* 
     Load a single font.
-
+   
     At this point it doesn't really load font
     it just ensures the font has been loaded (use css font-face)
 
@@ -1677,9 +1688,9 @@ PLAYGROUND.Application.prototype = {
 
   },
 
-  /*
+  /* 
 
-    Load a single font (internal).
+    Load a single font (internal).  
     It actually doesn't load any font - just ensures it has been loaded (with css)
 
   */
@@ -1730,8 +1741,11 @@ PLAYGROUND.Application.prototype = {
 
         var checkingTimer = setInterval(function() {
 
-          var base = cq(100, 32).font("14px somethingrandom").fillStyle("#fff").textBaseline("top").fillText("lorem ipsum dolores sit", 0, 4);
-          var test = cq(100, 32).font("14px '" + name + "'").fillStyle("#fff").textBaseline("top").fillText("lorem ipsum dolores sit", 0, 4);
+          var base = cq(100, 32).font("14px somethingrandom").fillStyle("#fff").textBaseline("top");
+          base.context.fillText("lorem ipsum dolores sit", 0, 4);
+
+          var test = cq(100, 32).font("14px '" + name + "'").fillStyle("#fff").textBaseline("top");
+          test.context.fillText("lorem ipsum dolores sit", 0, 4);
 
           if (!cq.compare(base, test)) {
 
@@ -1997,7 +2011,7 @@ PLAYGROUND.Gamepads.prototype = {
 
       for (var h = 12; h <= 15; h++) {
 
-        // if (!buttons[h])
+        // if (!buttons[h]) 
 
         buttons[h] = {
           pressed: false,
@@ -2173,6 +2187,7 @@ PLAYGROUND.Keyboard = function(app) {
 
   this.keydownEvent = {};
   this.keyupEvent = {};
+  this.keypressEvent = {};
 
   this.preventDefault = true;
 
@@ -2240,10 +2255,6 @@ PLAYGROUND.Keyboard.prototype = {
     222: "singlequote"
   },
 
-  keypress: function(e) {
-
-  },
-
   bypassKeys: ["f12", "f5", "ctrl", "alt", "shift"],
 
   keydown: function(e) {
@@ -2306,7 +2317,22 @@ PLAYGROUND.Keyboard.prototype = {
 
     this.trigger("keyup", this.keyupEvent);
 
+  },
+
+  keypress: function(e) {
+
+    if (!this.enabled) return;
+
+    if (e.which >= 48 && e.which <= 90) var keyName = String.fromCharCode(e.which).toLowerCase();
+    else var keyName = this.keycodes[e.which];
+
+    this.keypressEvent.key = keyName;
+    this.keypressEvent.original = e;
+
+    this.trigger("keypress", this.keypressEvent);
+
   }
+
 
 };
 
@@ -2360,7 +2386,7 @@ PLAYGROUND.Pointer.prototype = {
     pointer.x = e.x;
     pointer.y = e.y;
     // pointer.touch = e.touch;
-    // pointer.mouse = e.mouse;
+    // pointer.mouse = e.mouse;    
     pointer.id = e.id;
 
     return pointer;
@@ -2393,7 +2419,7 @@ PLAYGROUND.Pointer.prototype = {
 
     this.removePointer(e);
 
-    this.app.emitGlobalEvent("pointerup", e);
+    this.app.emitGlobalEvent("pointerup", e);    
 
   },
 
@@ -2604,7 +2630,7 @@ PLAYGROUND.Utils.extend(PLAYGROUND.Loader.prototype, PLAYGROUND.Events.prototype
 
 /* file: src/Mouse.js */
 
-/**
+/** 
 
   Mouse related functionality.
 
@@ -2629,7 +2655,7 @@ PLAYGROUND.Utils.extend(PLAYGROUND.Loader.prototype, PLAYGROUND.Events.prototype
   - touchstart or mousedown: action starts
   - touchend or mouseup: action ends
   - mousewheel: wheel event
-
+ 
   Reference: http://playgroundjs.com/playground-mouse
 
  */
@@ -2989,10 +3015,17 @@ PLAYGROUND.Application.prototype.loadSounds = function() {
 
 /* file: src/SoundWebAudioAPI.js */
 
+/* Stereo panner SHIM */
+
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){(function(global){"use strict";var AudioContext=global.AudioContext||global.webkitAudioContext;var StereoPannerNode=require("stereo-panner-node");if(AudioContext&&!AudioContext.prototype.createStereoPanner){AudioContext.prototype.createStereoPanner=function(){return new StereoPannerNode(this)}}}).call(this,typeof global!=="undefined"?global:typeof self!=="undefined"?self:typeof window!=="undefined"?window:{})},{"stereo-panner-node":4}],2:[function(require,module,exports){"use strict";var WS_CURVE_SIZE=4096;var curveL=new Float32Array(WS_CURVE_SIZE);var curveR=new Float32Array(WS_CURVE_SIZE);(function(){for(var i=0;i<WS_CURVE_SIZE;i++){curveL[i]=Math.cos(i/WS_CURVE_SIZE*Math.PI*.5);curveR[i]=Math.sin(i/WS_CURVE_SIZE*Math.PI*.5)}})();module.exports={L:curveL,R:curveR}},{}],3:[function(require,module,exports){(function(global){"use strict";var curve=require("./curve");function StereoPannerImpl(audioContext){this.audioContext=audioContext;this.inlet=audioContext.createChannelSplitter(2);this._pan=audioContext.createGain();this.pan=this._pan.gain;this._wsL=audioContext.createWaveShaper();this._wsR=audioContext.createWaveShaper();this._L=audioContext.createGain();this._R=audioContext.createGain();this.outlet=audioContext.createChannelMerger(2);this.inlet.channelCount=2;this.inlet.channelCountMode="explicit";this._pan.gain.value=0;this._wsL.curve=curve.L;this._wsR.curve=curve.R;this._L.gain.value=0;this._R.gain.value=0;this.inlet.connect(this._L,0);this.inlet.connect(this._R,1);this._L.connect(this.outlet,0,0);this._R.connect(this.outlet,0,1);this._pan.connect(this._wsL);this._pan.connect(this._wsR);this._wsL.connect(this._L.gain);this._wsR.connect(this._R.gain);this._isConnected=false;this._dc1buffer=null;this._dc1=null}StereoPannerImpl.prototype.connect=function(destination){var audioContext=this.audioContext;if(!this._isConnected){this._isConnected=true;this._dc1buffer=audioContext.createBuffer(1,2,audioContext.sampleRate);this._dc1buffer.getChannelData(0).set([1,1]);this._dc1=audioContext.createBufferSource();this._dc1.buffer=this._dc1buffer;this._dc1.loop=true;this._dc1.start(audioContext.currentTime);this._dc1.connect(this._pan)}global.AudioNode.prototype.connect.call(this.outlet,destination)};StereoPannerImpl.prototype.disconnect=function(){var audioContext=this.audioContext;if(this._isConnected){this._isConnected=false;this._dc1.stop(audioContext.currentTime);this._dc1.disconnect();this._dc1=null;this._dc1buffer=null}global.AudioNode.prototype.disconnect.call(this.outlet)};module.exports=StereoPannerImpl}).call(this,typeof global!=="undefined"?global:typeof self!=="undefined"?self:typeof window!=="undefined"?window:{})},{"./curve":2}],4:[function(require,module,exports){"use strict";var StereoPannerImpl=require("./stereo-panner-impl");function StereoPanner(audioContext){var impl=new StereoPannerImpl(audioContext);Object.defineProperties(impl.inlet,{pan:{value:impl.pan,enumerable:true},connect:{value:function(node){return impl.connect(node)}},disconnect:{value:function(){return impl.disconnect()}}});return impl.inlet}module.exports=StereoPanner},{"./stereo-panner-impl":3}]},{},[1]);
+
+
 /** Sound back-end using Web Audio API
  *
  * Reference: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
  */
+
+
 PLAYGROUND.SoundWebAudioAPI = function(app, audioContext) {
 
   this.app = app;
@@ -3026,8 +3059,6 @@ PLAYGROUND.SoundWebAudioAPI = function(app, audioContext) {
 
   this.pool = [];
   this.volume = 1.0;
-
-  this.setMasterPosition(0, 0, 0);
 
   this.loops = [];
 
@@ -3093,21 +3124,8 @@ PLAYGROUND.SoundWebAudioAPI.prototype = {
     }
   },
 
-  setMasterPosition: function(x, y, z) {
-
-    this.masterPosition = {
-      x: x,
-      y: y,
-      z: z
-    };
-
-    this.context.listener.setPosition(x, y, z)
-      // this.context.listener.setOrientation(0, 0, -1, 0, 1, 0);
-      // this.context.listener.dopplerFactor = 1;
-      // this.context.listener.speedOfSound = 343.3;
-  },
-
   getSoundBuffer: function() {
+
     if (!this.pool.length) {
       for (var i = 0; i < 100; i++) {
 
@@ -3116,25 +3134,14 @@ PLAYGROUND.SoundWebAudioAPI.prototype = {
         var nodes = [
           buffer = this.context.createBufferSource(),
           gain = this.context.createGain(),
-          panner = this.context.createPanner()
+          panner = this.context.createStereoPanner()
         ];
-
-        panner.distanceModel = "linear";
-
-        // 1 - rolloffFactor * (distance - refDistance) / (maxDistance - refDistance)
-        // refDistance / (refDistance + rolloffFactor * (distance - refDistance))
-        panner.refDistance = 1;
-        panner.maxDistance = 600;
-        panner.rolloffFactor = 1.0;
-
-
-        // panner.setOrientation(-1, -1, 0);
 
         this.pool.push(nodes);
 
         nodes[0].connect(nodes[1]);
-        // nodes[1].connect(nodes[2]);
-        nodes[1].connect(this.output);
+        nodes[1].connect(nodes[2]);
+        nodes[2].connect(this.output);
       }
     }
 
@@ -3171,8 +3178,6 @@ PLAYGROUND.SoundWebAudioAPI.prototype = {
 
     bufferSource.volumeLimit = 1;
 
-    this.setPosition(bufferSource, this.masterPosition.x, this.masterPosition.y, this.masterPosition.z);
-
     return bufferSource;
   },
 
@@ -3193,21 +3198,6 @@ PLAYGROUND.SoundWebAudioAPI.prototype = {
     return sound.playbackRate.value = rate;
   },
 
-  setPosition: function(sound, x, y, z) {
-
-    if (!sound) return;
-
-    sound.pannerNode.setPosition(x, y || 0, z || 0);
-  },
-
-  setVelocity: function(sound, x, y, z) {
-
-    if (!sound) return;
-
-    sound.pannerNode.setPosition(x, y || 0, z || 0);
-
-  },
-
   getVolume: function(sound) {
 
     if (!sound) return;
@@ -3223,6 +3213,18 @@ PLAYGROUND.SoundWebAudioAPI.prototype = {
     if (sound.alias) volume *= sound.alias.volume;
 
     return sound.gainNode.gain.value = Math.max(0, volume);
+  },
+
+  setPanning: function(sound, pan) {
+
+    sound.pannerNode.pan.value = pan;
+
+  },
+
+  getPanning: function(sound) {
+
+    return sound.pannerNode.pan.value;
+
   },
 
   fadeOut: function(sound) {
@@ -3385,6 +3387,10 @@ PLAYGROUND.SoundAudio.prototype = {
 
   setPosition: function() {
 
+  },
+
+  setPanning: function(sound, pan) {
+    
   }
 
 };
@@ -3571,7 +3577,7 @@ PLAYGROUND.Utils.extend(PLAYGROUND.Touch.prototype, PLAYGROUND.Events.prototype)
 
 PLAYGROUND.Tween = function(manager, context) {
 
-  if(!context) debugger;
+  if (!context) debugger;
 
   PLAYGROUND.Events.call(this);
 
@@ -3593,10 +3599,10 @@ PLAYGROUND.Tween = function(manager, context) {
 
 PLAYGROUND.Tween.prototype = {
 
-  /*
+  /* 
 
     Add an action to the end of the list
-
+     
     @param properties
     @param duration in miliseconds (optional, default is 0.5)
     @param easing (optional, default is 045)
@@ -3666,6 +3672,8 @@ PLAYGROUND.Tween.prototype = {
 
     this.actions.push(["repeat", times]);
 
+    return this;
+
   },
 
   /* Add a wait action for specified number of miliseconds */
@@ -3683,6 +3691,8 @@ PLAYGROUND.Tween.prototype = {
   delay: function(time) {
 
     this.actions.push(["wait", time]);
+
+    return this;
 
   },
 
@@ -3745,13 +3755,13 @@ PLAYGROUND.Tween.prototype = {
 
   },
 
-  /*
+  /* 
 
     Perform one animation step
-
+   
     Advances the index and, if the index reached the end of the
     `actions` array, either restarts it (for looped tweens) or terminates it.
-
+   
     The function will set a string in `currentAction` indicating what it
     should be done next but it does not perform the action itself.
 
@@ -3813,7 +3823,7 @@ PLAYGROUND.Tween.prototype = {
       this.before = [];
       this.types = [];
 
-      for (i = 0; i < this.keys.length; i++) {
+      for (let i = 0; i < this.keys.length; i++) {
 
         var key = this.keys[i];
         var value = this.context[key];
@@ -3953,10 +3963,10 @@ PLAYGROUND.Tween.prototype = {
 
   },
 
-  /*
+  /* 
 
     Advances the animation if enough time has passed
-
+   
     The function is called in response to `step()`; it will advance the
     index to next slot in the animation if
 
@@ -3987,14 +3997,14 @@ PLAYGROUND.Tween.prototype = {
 PLAYGROUND.Utils.extend(PLAYGROUND.Tween.prototype, PLAYGROUND.Events.prototype);
 
 
-/*
+/* 
 
   Manager for easing effects (transition between various states).
-
+ 
   If `app` is provided the manager becomes application's manager
   for tween effects. The constructor inserts a `tween()` function
   in application for simplicity.
-
+ 
   Properties:
   - delta:
   - defaultEasing:
@@ -4032,12 +4042,12 @@ PLAYGROUND.TweenManager.prototype = {
 
   },
 
-  /*
+  /* 
 
     Marks the tween for removing.
-
+   
     The tween is actually removed in `step()` function.
-
+   
     @param object the object associated with the tween
     @param safe if the tween located using `object` is `safe` then it is not removed.
 
@@ -4055,16 +4065,16 @@ PLAYGROUND.TweenManager.prototype = {
 
   },
 
-  /*
+  /* 
 
     Create a new tween.
-
+   
     The tween is also added to internal list (you don't have to call
     `add()` yourself).
-
+   
     @param context the object to associate with the new tween
     @returns a new PLAYGROUND.Tween object
-
+  
   */
 
   tween: function(context) {
@@ -4077,13 +4087,13 @@ PLAYGROUND.TweenManager.prototype = {
 
   },
 
-  /*
+  /* 
 
     Called each frame to update logic.
-
+   
     The function updates all active tweens and removes the ones
     tagged as such.
-
+   
   */
 
   step: function(delta) {
@@ -4408,17 +4418,22 @@ PLAYGROUND.LoadingScreen = {
 
 };
 
-/* file: src/vendor/CanvasQuery.js */
+/* file: src/lib/CanvasQuery.js */
 
-/*
+/*     
 
-  Canvas Query r7
-
+  Canvas Query r8
+  
   http://canvasquery.com
-
+  
   (c) 2012-2016 http://rezoner.net
-
+  
   Canvas Query may be freely distributed under the MIT license.
+
+  r8
+
+  + improved matchPalette performance
+  + defaultFont
 
   r7
 
@@ -4426,7 +4441,7 @@ PLAYGROUND.LoadingScreen = {
   + fillText respects no antialiasing when using pixel font
   + textBaseline("top") consistent among browsers
   + align state is added to the stack
-  + new canvases are pulled from the pool
+  + new canvases are pulled from the pool  
   + filter (experimetnal)
 
   r6
@@ -4452,6 +4467,7 @@ PLAYGROUND.LoadingScreen = {
   var COCOONJS = false;
 
   var Canvas = window.HTMLCanvasElement;
+  var orgImage = window.Image;
   var Image = window.HTMLImageElement;
   var ImageBitmap = window.ImageBitmap || window.HTMLImageElement;
   var COCOONJS = navigator.isCocoonJS;
@@ -4505,8 +4521,9 @@ PLAYGROUND.LoadingScreen = {
   };
 
   cq.lineSpacing = 1.0;
-  cq.defaultFont = "Arial";
+  cq.defaultFont = "";
   cq.textBaseline = "alphabetic";
+  cq.matchPalettePrecision = 10;
 
   cq.palettes = {
 
@@ -4520,6 +4537,116 @@ PLAYGROUND.LoadingScreen = {
 
   };
 
+  /*
+
+    cq.loadImages();
+
+    cq.run(function(){
+
+    });
+
+  */
+
+  /* Micro framework */
+
+  cq.images = {};
+  cq.atlases = {};
+  cq.loaderscount = 0;
+  cq.loadercallback = function() {
+
+    cq.loaderscount--;
+
+  };
+
+  cq.loadImages = function(keys) {
+
+    var promises = [];
+
+    for (var key in keys) {
+
+      cq.loaderscount++;
+
+      var path = keys[key];
+
+      var image = new orgImage();
+
+      cq.images[key] = image;
+      cq.loaderscount++;
+
+      var promise = new Promise(function(resolve, reject) {
+
+        image.addEventListener("load", function() {
+
+          cq.loadercallback();
+
+          resolve();
+
+        });
+
+        image.addEventListener("error", function() {
+
+          throw ("unable to load " + this.src);
+
+        });
+
+      });
+
+      image.src = path;
+
+    }
+
+    return Promise.all(promises);
+
+  };
+
+  cq.loadAtlases = function() {
+
+  };
+
+  /* WIP */
+
+  cq.run = function(callback) {
+
+    var lasTick = Date.now();
+
+    var frame = function() {
+
+      requestAnimationFrame(frame);
+
+      var dt = Date.now() - lastTick;
+      lastTick = Date.now();
+
+      if (cq.loaderscount === 0) callback(dt);
+
+    }
+
+    requestAnimationFrame(frame);
+
+  };
+
+  /* WIP */
+
+  cq.viewport = function() {
+
+    if (!cq.layer) {
+
+      cq.layer = cq();
+      cq.layer.appendTo(document.body);
+
+    }
+
+  };
+
+  /* WIP */
+  cq.mouse = function(callback) {
+
+    document.addEventListener('mousedown', function(e) {
+
+      console.log(e);
+
+    });
+
+  }
 
   cq.cocoon = function(selector) {
     if (arguments.length === 0) {
@@ -4991,6 +5118,9 @@ PLAYGROUND.LoadingScreen = {
       this.context.msImageSmoothingEnabled = smoothing;
       this.context.webkitImageSmoothingEnabled = smoothing;
       this.context.imageSmoothingEnabled = smoothing;
+
+      if (cq.defaultFont) this.context.font = cq.defaultFont;
+
       this.context.textBaseline = cq.textBaseline;
 
       if (COCOONJS) Cocoon.Utils.setAntialias(smoothing);
@@ -5111,7 +5241,9 @@ PLAYGROUND.LoadingScreen = {
 
     fillText: function(text, x, y) {
 
-      if ('WebkitAppearance' in document.documentElement.style) {
+      var webkitHack = !cq.smoothing && (this.fontHeight() <= 64) && ('WebkitAppearance' in document.documentElement.style);
+
+      if (webkitHack) {
 
         var scale = 4;
 
@@ -5128,7 +5260,7 @@ PLAYGROUND.LoadingScreen = {
 
         cq.setContextSmoothing(context, false);
 
-        // context.fillStyle = "#fff";
+        // context.fillStyle = "#fff"; 
         // context.fillRect(0,0,canvas.width, canvas.height);
 
         context.font = this.context.font;
@@ -5428,8 +5560,10 @@ PLAYGROUND.LoadingScreen = {
       var f = this.fillStyle();
       var padding = padding || 2;
 
-      this.fillStyle(background).fillRect(x - w / 2 - padding * 2, y - padding, w + padding * 4, h + padding * 2)
-      this.fillStyle(f).textAlign("center").textBaseline("top").fillText(text, x, y);
+      var a = this.context.textAlign;
+
+      this.fillStyle(background).fillRect(x - padding * 2, y - padding, w + padding * 4, h + padding * 2)
+      this.fillStyle(f).textAlign("left").textBaseline("top").fillText(text, x, y);
 
       return this;
     },
@@ -5628,59 +5762,85 @@ PLAYGROUND.LoadingScreen = {
 
     matchPalette: function(palette) {
 
-      var imgData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+      if (!palette.matches) palette.matches = new Map;
 
-      var rgbPalette = [];
+      if (!palette.colors) {
 
-      for (var i = 0; i < palette.length; i++) {
+        palette.colors = [];
 
-        rgbPalette.push(cq.color(palette[i]));
+        for (var i = 0; i < palette.length; i++) {
 
+          palette.colors.push(cq.color(palette[i]));
+
+        }
       }
 
-      for (var i = 0; i < imgData.data.length; i += 4) {
+      var imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+      var pixels = imageData.data;
+
+      for (var i = 0; i < pixels.length; i += 4) {
 
         var difList = [];
 
-        if (!imgData.data[i + 3]) continue;
+        if (!pixels[i + 3]) continue;
 
-        for (var j = 0; j < rgbPalette.length; j++) {
-          var rgbVal = rgbPalette[j];
-          var rDif = Math.abs(imgData.data[i] - rgbVal[0]),
-            gDif = Math.abs(imgData.data[i + 1] - rgbVal[1]),
-            bDif = Math.abs(imgData.data[i + 2] - rgbVal[2]);
-          difList.push(rDif + gDif + bDif);
-        }
+        var key =
+          (pixels[i + 0] / cq.matchPalettePrecision | 0) * cq.matchPalettePrecision +
+          (pixels[i + 1] / cq.matchPalettePrecision | 0) * cq.matchPalettePrecision * 1000 +
+          (pixels[i + 2] / cq.matchPalettePrecision | 0) * cq.matchPalettePrecision * 1000000;
 
-        var closestMatch = 0;
 
-        for (var j = 0; j < palette.length; j++) {
-          if (difList[j] < difList[closestMatch]) {
-            closestMatch = j;
+        if (!palette.matches.has(key)) {
+
+          for (var j = 0; j < palette.colors.length; j++) {
+
+            var rgb = palette.colors[j];
+            var rDif = Math.abs(pixels[i] - rgb[0]);
+            var gDif = Math.abs(pixels[i + 1] - rgb[1])
+            var bDif = Math.abs(pixels[i + 2] - rgb[2]);
+
+            difList.push(rDif + gDif + bDif);
+
           }
+
+          var closestMatch = 0;
+
+          for (var j = 0; j < palette.length; j++) {
+
+            if (difList[j] < difList[closestMatch]) {
+
+              closestMatch = j;
+
+            }
+
+          }
+
+          palette.matches.set(key, palette.colors[closestMatch]);
+
         }
 
-        var paletteRgb = cq.hexToRgb(palette[closestMatch]);
-        imgData.data[i] = paletteRgb[0];
-        imgData.data[i + 1] = paletteRgb[1];
-        imgData.data[i + 2] = paletteRgb[2];
+        var matchedColor = palette.matches.get(key);
+
+        pixels[i] = matchedColor[0];
+        pixels[i + 1] = matchedColor[1];
+        pixels[i + 2] = matchedColor[2];
 
         /* dithering */
 
-        //imgData.data[i + 3] = (255 * Math.random() < imgData.data[i + 3]) ? 255 : 0;
+        //imageData.data[i + 3] = (255 * Math.random() < imageData.data[i + 3]) ? 255 : 0;
 
-        //imgData.data[i + 3] = imgData.data[i + 3] > 128 ? 255 : 0;
+        //imageData.data[i + 3] = imageData.data[i + 3] > 128 ? 255 : 0;
         /*
         if (i % 3 === 0) {
-          imgData.data[i] -= cq.limitValue(imgData.data[i] - 50, 0, 255);
-          imgData.data[i + 1] -= cq.limitValue(imgData.data[i + 1] - 50, 0, 255);
-          imgData.data[i + 2] -= cq.limitValue(imgData.data[i + 2] - 50, 0, 255);
+          imageData.data[i] -= cq.limitValue(imageData.data[i] - 50, 0, 255);
+          imageData.data[i + 1] -= cq.limitValue(imageData.data[i + 1] - 50, 0, 255);
+          imageData.data[i + 2] -= cq.limitValue(imageData.data[i + 2] - 50, 0, 255);
         }
         */
 
       }
 
-      this.context.putImageData(imgData, 0, 0);
+      this.context.putImageData(imageData, 0, 0);
 
       return this;
 
@@ -6173,7 +6333,7 @@ PLAYGROUND.LoadingScreen = {
 
         this.textAlign("left");
 
-        if (textAlign === "left")
+        if (textAlign === "left" || textAlign === "start")
           this.fillText(text, x, oy);
         else if (textAlign === "center")
           this.fillText(text, x + maxWidth * 0.5 - width * 0.5 | 0, oy);
@@ -6206,7 +6366,9 @@ PLAYGROUND.LoadingScreen = {
 
       if (!this.fontHeights[font]) {
 
-        var temp = cq(100, 100);
+        var fontStyleHeight = parseInt(font);
+
+        var temp = cq(100, 10 + fontStyleHeight * 2 | 0);
 
         cq.setContextSmoothing(temp.context, false);
 
@@ -7115,13 +7277,13 @@ PLAYGROUND.LoadingScreen = {
 
 /* file: src/layer/Layer.js */
 
-/**
-
+/** 
+  
   Renderer build on top of CanvasQuery library.
-
+ 
   The application is enhanced with a `layer` member that
   provides access to the canvas.
-
+ 
   Reference: http://playgroundjs.com/playground-layer
 
 */
@@ -7374,3 +7536,4 @@ PLAYGROUND.LoadingScreen = {
   }
 
 };
+module.exports = playground;playground.Application = PLAYGROUND.Application;
