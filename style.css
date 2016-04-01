@@ -17,7 +17,7 @@ body {
 
 @font-face {
   font-family: 'Minecraftia-Regular';
-  src: url('font/Minecraftia-Regular.eot?#iefix') format('embedded-opentype'),  url('font/Minecraftia-Regular.woff') format('woff'), url('font/Minecraftia-Regular.ttf')  format('truetype'), url('font/Minecraftia-Regular.svg#Minecraftia-Regular') format('svg');
+  src: url('build/font/Minecraftia-Regular.eot?#iefix') format('embedded-opentype'),  url('build/font/Minecraftia-Regular.woff') format('woff'), url('build/font/Minecraftia-Regular.ttf')  format('truetype'), url('build/font/Minecraftia-Regular.svg#Minecraftia-Regular') format('svg');
   font-weight: normal;
   font-style: normal;
 }
